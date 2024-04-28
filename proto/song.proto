@@ -1,0 +1,32 @@
+syntax = "proto3";
+package api;
+
+message Event {
+  string name = 1;
+  int32 partner = 2;
+  int64 timestamp = 3;
+}
+
+message SetEventRequest {
+  string name = 1;
+  int32 partner = 2;
+  string type = 3;
+}
+
+message SetEventRespond {
+  string status = 1;
+  string id = 2;
+}
+
+message GetEventsRequest {
+  int32 partner = 1;
+}
+message GetEventsRespond {
+  string status = 1;
+  repeated Event events  = 2;
+}
+
+service EventService {
+  rpc Set (SetEventRequest) returns (SetEventRespond);
+  rpc Get (GetEventsRequest) returns (GetEventsRespond);
+}

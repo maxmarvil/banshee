@@ -1,0 +1,7 @@
+pub mod api;
+pub mod server;
+
+fn main() {
+
+    println!("Hello, world!");
+}

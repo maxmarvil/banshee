@@ -1,0 +1,27 @@
+version: '3.3'
+
+services:
+  banshee:
+    platform: linux/arm64/v8
+    build:
+      context: /app
+    container_name: banshee
+    volumes:
+      - ../:/app
+    env_file: ../.env
+  banshee_redis:
+    platform: linux/amd64
+    build: ./config/redis
+    container_name: banshee_redis
+    env_file: ../.env
+    logging:
+      driver: "none"
+    environment:
+      REDIS_PASSWORD: "Pass:123"
+    volumes:
+      - ./redis:/data
+    ports:
+      - 6379:6379
+networks:
+  default:
+    driver: bridge

@@ -1,7 +1,5 @@
-pub mod api;
-pub mod server;
 
+// deprecated
 fn main() {
 
-    println!("Hello, world!");
 }

@@ -1,16 +1,25 @@
 syntax = "proto3";
 package api;
 
+enum EventType {
+  alarm = 0;
+  timer = 1;
+}
+
 message Event {
-  string name = 1;
-  int32 partner = 2;
-  int64 timestamp = 3;
+  string comment = 1;
+  uint32 partner = 2;
+  uint64 timeout = 3;
+  string event_type = 4;
+  string payload = 5;
 }
 
 message SetEventRequest {
-  string name = 1;
-  int32 partner = 2;
-  string type = 3;
+  string comment = 1;
+  uint32 partner = 2;
+  uint64 timeout = 3;
+  string event_type = 4;
+  string payload = 5;
 }
 
 message SetEventRespond {

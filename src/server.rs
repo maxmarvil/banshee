@@ -1,18 +1,21 @@
-pub mod api;
-
+use std::any::Any;
 use std::str::FromStr;
-use tonic::{transport::Server, Request, Response, Status};
-use crate::api::event_service_server::{EventService, EventServiceServer};
-use crate::api::{Event, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond};
+
 use clap::Parser;
+use tonic::{Request, Response, Status, transport::Server};
+
+use api::{Event, EventType::Alarm, EventType::Timer, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond};
+use api::event_service_server::{EventService, EventServiceServer};
+
+pub mod api;
 
 #[tonic::async_trait]
 impl EventService for Event {
     async fn set(&self, request: Request<SetEventRequest>) -> Result<Response<SetEventRespond>, Status> {
-        //println!("Got a request: {:?}", request);
+        println!("Got a request: {:#?}", request);
 
         let reply = SetEventRespond {
-            status: String::from_str("Ok").unwrap(),
+            status: format!("Ok {}", request.get_ref().comment),
             id: String::from_str("uuid").unwrap()
         };
 
@@ -20,15 +23,16 @@ impl EventService for Event {
     }
 
     async fn get(&self, request: Request<GetEventsRequest>) -> Result<Response<GetEventsRespond>, Status> {
-        println!("Got a request: {:?}", request);
+        println!("Got a request: {:#?}", request);
         let mok_event = Event{
-            name: String::from_str("Ok-mok").unwrap(),
+            comment: String::from_str("Ok-mok").unwrap(),
             partner: 5,
-            timestamp: 8888888
+            timeout: 8888888,
+            event_type: Alarm.as_str_name().to_string(),
+            payload: String::from_str("").unwrap()
         };
         let mut resp_vec = vec!();
         resp_vec.push(mok_event);
-
         let reply = GetEventsRespond {
             status:  String::from_str("Ok").unwrap(),
             events: resp_vec
@@ -52,12 +56,12 @@ struct ServerCli {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = ServerCli::parse();
     let addr = format!("{}:{}", cli.server, cli.port).parse()?;
-    let echo = Event::default();
+    let event = Event::default();
 
     println!("Server listening on {}", addr);
 
     Server::builder()
-        .add_service(EventServiceServer::new(echo))
+        .add_service(EventServiceServer::new(event))
         .serve(addr)
         .await?;
 

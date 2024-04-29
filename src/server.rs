@@ -1,13 +1,14 @@
-use std::any::Any;
 use std::str::FromStr;
-
+use dotenv::dotenv;
 use clap::Parser;
 use tonic::{Request, Response, Status, transport::Server};
 
-use api::{Event, EventType::Alarm, EventType::Timer, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond};
+use api::{Event, EventType::Alarm, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond};
 use api::event_service_server::{EventService, EventServiceServer};
 
 pub mod api;
+pub mod model;
+mod controller;
 
 #[tonic::async_trait]
 impl EventService for Event {
@@ -54,6 +55,7 @@ struct ServerCli {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenv().ok();
     let cli = ServerCli::parse();
     let addr = format!("{}:{}", cli.server, cli.port).parse()?;
     let event = Event::default();

@@ -1,10 +1,10 @@
 use std::str::FromStr;
-use dotenv::dotenv;
 use clap::Parser;
 use tonic::{Request, Response, Status, transport::Server};
-
-use api::{Event, EventType::Alarm, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond};
+use model::event::EventModel;
+use api::{Event, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond};
 use api::event_service_server::{EventService, EventServiceServer};
+use std::hash::{DefaultHasher, Hash, Hasher};
 
 pub mod api;
 pub mod model;
@@ -13,8 +13,26 @@ mod controller;
 #[tonic::async_trait]
 impl EventService for Event {
     async fn set(&self, request: Request<SetEventRequest>) -> Result<Response<SetEventRespond>, Status> {
-        println!("Got a request: {:#?}", request);
 
+        let data = request.get_ref();
+        let new_event = Event{
+            comment: data.comment.clone(),
+            partner: data.partner.clone(),
+            timeout: data.timeout.clone(),
+            payload: data.comment.clone(),
+        };
+
+
+        let mut conection = controller::redis_adapter::connect().await.unwrap();
+        let key = calculate_hash(&new_event);
+        //let mut event_model = EventModel{event : new_event.clone(), con:conection};
+
+        let _: () = redis::pipe()
+            .atomic()
+            .set(format!("{}:partner-{}:{key}",new_event.timeout,new_event.partner), "{ message:\"Hello rediska\"}")
+            .query_async(&mut conection)
+            .await.unwrap();
+        println!("Got a request: {key} {:#?}", &new_event);
         let reply = SetEventRespond {
             status: format!("Ok {}", request.get_ref().comment),
             id: String::from_str("uuid").unwrap()
@@ -29,7 +47,6 @@ impl EventService for Event {
             comment: String::from_str("Ok-mok").unwrap(),
             partner: 5,
             timeout: 8888888,
-            event_type: Alarm.as_str_name().to_string(),
             payload: String::from_str("").unwrap()
         };
         let mut resp_vec = vec!();
@@ -55,7 +72,7 @@ struct ServerCli {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    dotenv().ok();
+    dotenv::dotenv().ok();
     let cli = ServerCli::parse();
     let addr = format!("{}:{}", cli.server, cli.port).parse()?;
     let event = Event::default();
@@ -68,4 +85,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     Ok(())
+}
+
+fn calculate_hash<T: Hash>(t: &T) -> u64 {
+    let mut s = DefaultHasher::new();
+    t.hash(&mut s);
+    s.finish()
 }

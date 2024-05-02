@@ -1,11 +1,10 @@
-mod event;
-
+pub mod event;
+use std::collections::HashMap;
 pub trait Message {}
 
 pub trait Model {
     fn delete<E>(&self) -> Result<(), E>;
 }
-use std::collections::HashMap;
 
 pub trait DBModel:Model {
     fn set<T:Message, E>(data: T) -> Result<(), E>;

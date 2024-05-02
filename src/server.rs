@@ -5,6 +5,8 @@ use model::event::EventModel;
 use api::{Event, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond};
 use api::event_service_server::{EventService, EventServiceServer};
 use std::hash::{DefaultHasher, Hash, Hasher};
+use serde::{Serialize,ser::{SerializeStruct}};
+use serde_json::{Serializer};
 
 pub mod api;
 pub mod model;
@@ -22,14 +24,13 @@ impl EventService for Event {
             payload: data.comment.clone(),
         };
 
-
         let mut conection = controller::redis_adapter::connect().await.unwrap();
         let key = calculate_hash(&new_event);
         //let mut event_model = EventModel{event : new_event.clone(), con:conection};
 
         let _: () = redis::pipe()
             .atomic()
-            .set(format!("{}:partner-{}:{key}",new_event.timeout,new_event.partner), "{ message:\"Hello rediska\"}")
+            .set(format!("{}:partner-{}:{key}",new_event.timeout,new_event.partner), serde_json::to_string(&new_event.clone()).unwrap())
             .query_async(&mut conection)
             .await.unwrap();
         println!("Got a request: {key} {:#?}", &new_event);

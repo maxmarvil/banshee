@@ -1,10 +1,11 @@
 use std::collections::HashMap;
-use redis::{Connection};
-use serde::ser::{Serialize, Serializer};
+use redis::{Connection, NumericBehavior, RedisWrite, ToRedisArgs, };
+use serde::{Deserialize, Serialize, Serializer};
+use serde::ser::SerializeStruct;
 use crate::api::{Event};
 use crate::model::{DBModel, Message, Model};
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct DataModel {
     comment: String ,
     partner: u32 ,
@@ -16,7 +17,21 @@ pub struct EventModel{
     pub event: Event,
     pub con: Connection
 }
+
 impl Message for Event{}
+
+impl Serialize for Event{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        let mut s = serializer.serialize_struct("Event", 4)?;
+        s.serialize_field("comment", &self.comment)?;
+        s.serialize_field("partner", &self.partner)?;
+        s.serialize_field("timeout", &self.timeout)?;
+        s.serialize_field("payload", &self.payload)?;
+        s.end()
+    }
+}
+
+
 
 impl Model for EventModel {
     fn delete<E>(&self)->Result<(), E> {

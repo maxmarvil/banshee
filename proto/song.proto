@@ -20,6 +20,14 @@ message SetEventRespond {
   string id = 2;
 }
 
+message GetEventRequest {
+  string key = 1;
+}
+message GetEventRespond {
+  string status = 1;
+  Event event  = 2;
+}
+
 message GetEventsRequest {
   int32 partner = 1;
 }
@@ -30,5 +38,6 @@ message GetEventsRespond {
 
 service EventService {
   rpc Set (SetEventRequest) returns (SetEventRespond);
-  rpc Get (GetEventsRequest) returns (GetEventsRespond);
+  rpc Get (GetEventRequest) returns (GetEventRespond);
+  rpc GetList (GetEventsRequest) returns (GetEventsRespond);
 }

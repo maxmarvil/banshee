@@ -2,7 +2,7 @@ use std::str::FromStr;
 use clap::Parser;
 use tonic::{Request, Response, Status, transport::Server};
 use model::event::EventModel;
-use api::{Event, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond};
+use api::{Event, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond,GetEventRequest, GetEventRespond};
 use api::event_service_server::{EventService, EventServiceServer};
 use std::hash::{DefaultHasher, Hash, Hasher};
 use serde::{Serialize,ser::{SerializeStruct}};
@@ -10,40 +10,33 @@ use serde_json::{Serializer};
 
 pub mod api;
 pub mod model;
-mod controller;
+pub mod connection;
+pub mod controller;
+mod validator;
+
 
 #[tonic::async_trait]
 impl EventService for Event {
     async fn set(&self, request: Request<SetEventRequest>) -> Result<Response<SetEventRespond>, Status> {
+        let  result = controller::event_controller::set_new(request);
 
-        let data = request.get_ref();
-        let new_event = Event{
-            comment: data.comment.clone(),
-            partner: data.partner.clone(),
-            timeout: data.timeout.clone(),
-            payload: data.comment.clone(),
-        };
-
-        let mut conection = controller::redis_adapter::connect().await.unwrap();
-        let key = calculate_hash(&new_event);
-        //let mut event_model = EventModel{event : new_event.clone(), con:conection};
-
-        let _: () = redis::pipe()
-            .atomic()
-            .set(format!("{}:partner-{}:{key}",new_event.timeout,new_event.partner), serde_json::to_string(&new_event.clone()).unwrap())
-            .query_async(&mut conection)
-            .await.unwrap();
-        println!("Got a request: {key} {:#?}", &new_event);
-        let reply = SetEventRespond {
-            status: format!("Ok {}", request.get_ref().comment),
-            id: String::from_str("uuid").unwrap()
-        };
-
-        Ok(Response::new(reply))
+        Ok(Response::new(result.await.unwrap()))
     }
 
-    async fn get(&self, request: Request<GetEventsRequest>) -> Result<Response<GetEventsRespond>, Status> {
+    async fn get(&self, request: Request<GetEventRequest>) -> Result<Response<GetEventRespond>, Status> {
         println!("Got a request: {:#?}", request);
+
+        let  result = controller::event_controller::get_one(request);
+
+        // let reply = GetEventRespond {
+        //     status:  String::from_str("Ok").unwrap(),
+        //     event: Some(mok_event)
+        // };
+
+        Ok(Response::new(result.await.unwrap()))
+    }
+
+    async fn get_list(&self, request: Request<GetEventsRequest>) -> Result<Response<GetEventsRespond>, Status> {
         let mok_event = Event{
             comment: String::from_str("Ok-mok").unwrap(),
             partner: 5,

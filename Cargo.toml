@@ -16,10 +16,21 @@ prost = "0.12.4"
 prost-types = "0.12.4"
 tokio = { version = "1", features = ["macros","rt-multi-thread","rt"] }
 tonic = "0.11.0"
+mysql = { version = "*", features = ["derive"] }
+log = "0.4.21"
+
 
 [dependencies.redis]
 version = "*"
 features = ["tokio-comp","keep-alive"]
+
+[dependencies.uuid]
+version = "1.8.0"
+features = [
+    "v4",                # Lets you generate random UUIDs
+    "fast-rng",          # Use a faster (but still sufficiently random) RNG
+    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+]
 
 [build-dependencies]
 tonic-build = "0.11.0"
@@ -37,3 +48,8 @@ REDIS_PASSWORD="none"
 REDIS_DB=0
 PROTOBUF="/usr/local/proto"
 OUT_DIR="extern/"
+MYSQL_HOST="banshee_mysql"
+MYSQL_PORT=3306
+MYSQL_DB="banshee"
+MYSQL_USER=""
+MYSQL_PASSWORD=""

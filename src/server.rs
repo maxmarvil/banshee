@@ -5,6 +5,7 @@ use model::event::EventModel;
 use api::{Event, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond,GetEventRequest, GetEventRespond};
 use api::event_service_server::{EventService, EventServiceServer};
 use std::hash::{DefaultHasher, Hash, Hasher};
+use log::info;
 use serde::{Serialize,ser::{SerializeStruct}};
 use serde_json::{Serializer};
 
@@ -72,6 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let event = Event::default();
 
     println!("Server listening on {}", addr);
+    info!("try migration");
 
     Server::builder()
         .add_service(EventServiceServer::new(event))

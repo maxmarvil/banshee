@@ -20,6 +20,8 @@ services:
 #    depends_on:
 #      banshee_redis:
 #        condition: service_healthy
+#      banshee_mysql:
+#        condition: service_healthy
   banshee_redis:
     platform: linux/amd64
     build: ./Docker/config/redis
@@ -36,7 +38,19 @@ services:
     volumes:
       - ./Docker/redis:/data
 
-
+  banshee_mysql:
+    image: mysql:8
+    restart: always
+    container_name: banshee_mysql
+    ports:
+      - 3306:3306
+    volumes:
+      - ./Docker/mysql:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: banshee
+      MYSQL_USER: banshee
+      MYSQL_PASSWORD: Pass:123
+      MYSQL_ROOT_PASSWORD: Pass:123
   # The commented out section below is an example of how to define a PostgreSQL
   # database that your application can use. `depends_on` tells Docker Compose to
   # start the database before your application. The `db-data` volume persists the

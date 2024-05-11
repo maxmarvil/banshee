@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use redis::Connection;
 use crate::api::Event;
 
+
 pub trait Message {
     //fn update_struct(&mut self, data: Event) -> ();
 }

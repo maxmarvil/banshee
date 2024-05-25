@@ -1,26 +1,21 @@
-use mysql::*;
-use mysql::prelude::*;
+use diesel::connection::{Connection};
 use std::env::var as envar;
+use diesel::prelude::{*,MysqlConnection};
 
-pub fn connect() -> Result<PooledConn> {
+pub fn connect() -> Result<MysqlConnection, ConnectionError> {
     let url =  get_conn_url();
-    let pool = Pool::new(url.as_str())?;
-    let conn = pool.get_conn()?;
 
-    Ok(conn)
-}
+    let connection = MysqlConnection::establish(&url.as_str())
+        .unwrap_or_else(|_| panic!("Error connecting to {}", &url.as_str()));
 
-pub fn connect_base() -> Result<Conn> {
-    let url = get_conn_url();
-    Conn::new(url.as_str())
+    Ok(connection)
 }
 
 fn get_conn_url() -> String {
-    let url = format!("mysql://{}:{}@{}:{}/{}",
+  format!("mysql://{}:{}@{}:{}/{}",
                       envar("MYSQL_USER").unwrap(),
                       envar("MYSQL_PASSWORD").unwrap(),
                       envar("MYSQL_HOST").unwrap(),
                       envar("MYSQL_PORT").unwrap(),
-                      envar("MYSQL_DB").unwrap());
-    url
+                      envar("MYSQL_DB").unwrap())
 }

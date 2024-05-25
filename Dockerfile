@@ -8,6 +8,7 @@
 
 ARG RUST_VERSION=1.76.0
 ARG APP_NAME=event-server
+#ENV OUT_DIR="/usr/rust/out"
 
 
 ################################################################################
@@ -48,7 +49,7 @@ cp ./target/release/$APP_NAME /bin/server
 # reproducability is important, consider using a digest
 # (e.g., alpine@sha256:664888ac9cfd28068e062c991ebcff4b4c7307dc8dd4df9e728bedde5c449d91).
 FROM alpine:3.18 AS final
-
+#ENV OUT_DIR="/usr/rust/out"
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
 ARG UID=10001

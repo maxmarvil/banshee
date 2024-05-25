@@ -14,6 +14,7 @@ pub mod model;
 pub mod connection;
 pub mod controller;
 mod validator;
+mod schema;
 
 
 #[tonic::async_trait]

@@ -8,35 +8,33 @@
 # database or a cache. For examples, see the Awesome Compose repository:
 # https://github.com/docker/awesome-compose
 services:
-#  server:
-#    build:
-#      context: .
-#      target: final
-#    ports:
-#      - 50052:50052
-#    environment:
-#      OUT_DIR: "/usr/local/proto/"
-#    env_file: .env
-#    depends_on:
+  server:
+    build:
+      context: .
+      target: final
+    ports:
+      - 50052:50052
+    env_file: .env
+    depends_on:
 #      banshee_redis:
 #        condition: service_healthy
-#      banshee_mysql:
-#        condition: service_healthy
-  banshee_redis:
-    platform: linux/amd64
-    build: ./Docker/config/redis
-    #image: redis:alpine
-    container_name: banshee_redis
-    env_file: .env
-    restart: always
-    ports:
-      - 6379:6379
-    logging:
-      driver: "none"
-    environment:
-      REDIS_PASSWORD: "Pass:123"
-    volumes:
-      - ./Docker/redis:/data
+      banshee_mysql:
+        condition: service_healthy
+#  banshee_redis:
+#    platform: linux/amd64
+#    build: ./Docker/config/redis
+#    #image: redis:alpine
+#    container_name: banshee_redis
+#    env_file: .env
+#    restart: always
+#    ports:
+#      - 6379:6379
+#    logging:
+#      driver: "none"
+#    environment:
+#      REDIS_PASSWORD: "Pass:123"
+#    volumes:
+#      - ./Docker/redis:/data
 
   banshee_mysql:
     image: mysql:8

@@ -7,6 +7,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tonic_build::configure()
         .type_attribute("Event", "#[derive(Hash, serde::Deserialize)]")
+        .out_dir("src/grpc")
         .compile(&["proto/song.proto"],&["proto"]);
     Ok(())
 }

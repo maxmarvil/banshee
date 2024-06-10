@@ -16,8 +16,8 @@ prost = "0.12.4"
 prost-types = "0.12.4"
 tokio = { version = "1", features = ["macros","rt-multi-thread","rt"] }
 tonic = "0.11.0"
-mysql = { version = "*", features = ["derive"] }
 log = "0.4.21"
+sqlx = { version = "0.7", features = [ "runtime-tokio", "mysql"] }
 
 
 [dependencies.redis]

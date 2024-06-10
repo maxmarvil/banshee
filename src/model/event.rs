@@ -1,9 +1,14 @@
 use std::collections::HashMap;
+use log::error;
 use redis::{Connection, ErrorKind, from_redis_value, FromRedisValue, NumericBehavior, RedisResult, RedisWrite, ToRedisArgs, Value};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::__private::de::IdentifierDeserializer;
 use serde::ser::SerializeStruct;
+use sqlx::Error;
+use sqlx::error::DatabaseError;
+use uuid::Uuid;
 use crate::api::{Event};
+use crate::connection;
 use crate::model::{DBModel, Message, Model};
 
 pub struct EventModel {
@@ -96,7 +101,27 @@ impl Model for EventModel {
 }
 
 impl DBModel for EventModel {
-    fn set<T:Message, E>(data: T, connection: Connection) -> Result<(), E> {
+    async fn set<E>(&self, connection: Connection) -> Result<(), E> {
+        let  key = Uuid::new_v4();
+        let mut pool_result = connection::mysql_connection::connect().await;
+        let conn_pool = match pool_result {
+            Ok(pool) => pool,
+            Err(e) => panic!("Ошибка соединения: {:#?}", e)
+        };
+        let res = sqlx::query_as("INSERT INTO events (id, partner_id, timestamp, comment, payload) VALUES ($1, $2, $3, $4, $5")
+            .bind(key.to_string())
+            .bind(self.event.partner)
+            .bind(self.event.timeout)
+            .bind(self.event.comment.clone())
+            .bind(self.event.payload.clone())
+            .fetch_one(&conn_pool).await;
+        let row = match res {
+            Ok(new) => new,
+            Err(er) => panic!(" Ошибка запроса: {:#?}", er)
+        };
+        Ok(())
+    }
+    async fn update<E>(&self, connection: Connection) -> Result<(), E> {
         //todo!()
         Ok(())
     }

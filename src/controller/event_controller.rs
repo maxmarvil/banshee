@@ -2,6 +2,8 @@ use tonic::{Request, Status};
 use std::str::FromStr;
 use redis::{ RedisError, RedisResult};
 use uuid::Uuid;
+
+use sqlx::Error::Database;
 use crate::{connection, calculate_hash};
 use crate::api::{Event, GetEventRequest, GetEventRespond, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond};
 
@@ -14,15 +16,16 @@ pub async fn set_new (request: Request<SetEventRequest>) -> Result<SetEventRespo
         payload: data.comment.clone(),
     };
 
-    let mut conection = connection::mysql_connection::connect().unwrap();
     let  key = Uuid::new_v4();
     //conection
+
 
     Ok(SetEventRespond {
         status: format!("Ok"),
         id: String::from_str(&key.to_string()).unwrap()
     })
 }
+
 pub async fn get_one(request: Request<GetEventRequest>) -> Result<GetEventRespond, Status> {
     Ok(
         GetEventRespond {

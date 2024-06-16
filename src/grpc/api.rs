@@ -7,8 +7,8 @@ pub struct Event {
     pub comment: ::prost::alloc::string::String,
     #[prost(uint32, tag = "2")]
     pub partner: u32,
-    #[prost(uint64, tag = "3")]
-    pub timeout: u64,
+    #[prost(string, tag = "3")]
+    pub timestamp: ::prost::alloc::string::String,
     #[prost(string, tag = "5")]
     pub payload: ::prost::alloc::string::String,
 }
@@ -19,8 +19,8 @@ pub struct SetEventRequest {
     pub comment: ::prost::alloc::string::String,
     #[prost(uint32, tag = "2")]
     pub partner: u32,
-    #[prost(uint64, tag = "3")]
-    pub timeout: u64,
+    #[prost(string, tag = "3")]
+    pub timestamp: ::prost::alloc::string::String,
     #[prost(string, tag = "5")]
     pub payload: ::prost::alloc::string::String,
 }

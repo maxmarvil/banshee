@@ -1,30 +1,33 @@
 use std::collections::HashMap;
+use chrono::{DateTime, NaiveDateTime, Utc};
 use log::error;
 use redis::{Connection, ErrorKind, from_redis_value, FromRedisValue, NumericBehavior, RedisResult, RedisWrite, ToRedisArgs, Value};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::__private::de::IdentifierDeserializer;
 use serde::ser::SerializeStruct;
-use sqlx::Error;
+use sqlx::{Error, Execute};
 use sqlx::error::DatabaseError;
 use uuid::Uuid;
+use prost::Message;
 use crate::api::{Event};
 use crate::connection;
-use crate::model::{DBModel, Message, Model};
+use crate::model::{DBModel, Model};
+use chrono::prelude::*;
 
+#[derive(Debug)]
 pub struct EventModel {
     pub event: Event,
-    pub con: Connection
 }
 
-impl Message for Event {
-    // fn update_struct(&mut self, data: Event) -> () {
-    //     self.comment = data.comment.clone();
-    //     self.partner = data.partner.clone();
-    //     self.timeout = data.timeout.clone();
-    //     self.payload = data.payload.clone();
-    //     ()
-    // }
-}
+// impl Message for Event {
+//     fn update_struct(&mut self, data: Event) -> () {
+//         self.comment = data.comment.clone();
+//         self.partner = data.partner.clone();
+//         self.timestamp = data.timestamp.clone();
+//         self.payload = data.payload.clone();
+//         ()
+//     }
+// }
 impl  FromRedisValue for Event {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         let json_str: String = from_redis_value(v)?;
@@ -37,7 +40,7 @@ impl  FromRedisValue for Event {
         Ok(Event{
             comment:"mok".to_string(),
             partner:4,
-            timeout:2324,
+            timestamp:"".to_string(),
             payload: "".to_string()
         })
     }
@@ -73,7 +76,7 @@ impl Serialize for Event {
         let mut s = serializer.serialize_struct("Event", 4)?;
         s.serialize_field("comment", &self.comment)?;
         s.serialize_field("partner", &self.partner)?;
-        s.serialize_field("timeout", &self.timeout)?;
+        s.serialize_field("timestamp", &self.timestamp)?;
         s.serialize_field("payload", &self.payload)?;
         s.end()
     }
@@ -81,7 +84,7 @@ impl Serialize for Event {
 
 // impl Deserialize for Event {
 //     fn deserialize< D: Deserializer>(deserializer: D) -> Result<Self, D::Error> {
-//         let fields: &[&str] = &["comment", "partner","timeout","payload"];
+//         let fields: &[&str] = &["comment", "partner","timestamp","payload"];
 //         deserializer.deserialize_struct("Event", fields, None)?
 //     }
 //
@@ -98,45 +101,56 @@ impl Model for EventModel {
     fn delete<E>(&self)->Result<(), E> {
         Ok(())
     }
+
+    fn new(item: Event) -> EventModel{
+        EventModel {
+            event: item,
+        }
+    }
 }
 
 impl DBModel for EventModel {
-    async fn set<E>(&self, connection: Connection) -> Result<(), E> {
+    async fn set(&self) -> Result<(), String> {
         let  key = Uuid::new_v4();
         let mut pool_result = connection::mysql_connection::connect().await;
         let conn_pool = match pool_result {
             Ok(pool) => pool,
             Err(e) => panic!("Ошибка соединения: {:#?}", e)
         };
-        let res = sqlx::query_as("INSERT INTO events (id, partner_id, timestamp, comment, payload) VALUES ($1, $2, $3, $4, $5")
-            .bind(key.to_string())
-            .bind(self.event.partner)
-            .bind(self.event.timeout)
-            .bind(self.event.comment.clone())
-            .bind(self.event.payload.clone())
-            .fetch_one(&conn_pool).await;
+
+         // Create a normal DateTime from the NaiveDateTime
+        let datetime  = DateTime::from_timestamp(self.event.timestamp.parse::<i64>().unwrap(), 0).unwrap();
+        let q_builder = sqlx::query!(r#"INSERT INTO events (id, partner_id, timestamp, comment, payload) VALUES (?, ?, ?, ?, ?);"#,
+            key.to_string(), self.event.partner, datetime.format("%Y-%m-%d %H:%M:%S").to_string(), self.event.comment.clone(), self.event.payload.clone());
+        let res =  q_builder.execute(&conn_pool).await;
+
+        println!("res {:#?}", res);
         let row = match res {
-            Ok(new) => new,
-            Err(er) => panic!(" Ошибка запроса: {:#?}", er)
+            Ok(new) => {
+                println!("row {:#?}", new);
+                new
+            } ,
+            Err(er) => panic!("Ошибка запроса: {:#?}", er)
         };
+
         Ok(())
     }
-    async fn update<E>(&self, connection: Connection) -> Result<(), E> {
+    async fn update<E>(&self) -> Result<(), E> {
         //todo!()
         Ok(())
     }
 
-    fn get<T:Message, E>(key: &str, connection: Connection) -> Result<Option<T>, E> {
+    fn get<T:Message, E>(key: &str) -> Result<Option<T>, E> {
         //todo!()
         Ok(None)
     }
 
-    fn select<T:Message, E, S>(filter: HashMap<&str, &str, S>, connection: Connection) -> Result<Option<Vec<T>>, E> {
+    fn select<T:Message, E, S>(filter: HashMap<&str, &str, S>) -> Result<Option<Vec<T>>, E> {
         //todo!()
         Ok(None)
     }
 
-    fn delete<T, E>(key: T, connection: Connection) -> Result<(), E> {
+    fn delete<T, E>(key: T) -> Result<(), E> {
         //todo!()
         Ok(())
     }

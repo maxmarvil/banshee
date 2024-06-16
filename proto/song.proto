@@ -4,14 +4,14 @@ package api;
 message Event {
   string comment = 1;
   uint32 partner = 2;
-  uint64 timeout = 3;
+  string timestamp = 3;
   string payload = 5;
 }
 
 message SetEventRequest {
   string comment = 1;
   uint32 partner = 2;
-  uint64 timeout = 3;
+  string timestamp = 3;
   string payload = 5;
 }
 

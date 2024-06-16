@@ -5,6 +5,7 @@ use sqlx::{Error, MySql, MySqlPool, Pool};
 
 pub async fn connect() -> Result<Pool<MySql>, Error> {
     let url =  get_conn_url();
+    println!("Connect to {url}");
     let pool = MySqlPoolOptions::new()
         .max_connections(5)
         .connect(url.as_str()).await;

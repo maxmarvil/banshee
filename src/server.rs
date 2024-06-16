@@ -41,8 +41,8 @@ impl EventService for Event {
         let mok_event = Event{
             comment: String::from_str("Ok-mok").unwrap(),
             partner: 5,
-            timeout: 8888888,
-            payload: String::from_str("").unwrap()
+            timestamp: String::from_str("1718285363").unwrap(),
+            payload: String::from_str("{}").unwrap()
         };
         let mut resp_vec = vec!();
         resp_vec.push(mok_event);

@@ -1,4 +1,4 @@
-use tonic::{Request, Status};
+use tonic::{IntoRequest, Request, Status};
 use std::str::FromStr;
 use redis::{ RedisError, RedisResult};
 use uuid::Uuid;
@@ -6,23 +6,25 @@ use uuid::Uuid;
 use sqlx::Error::Database;
 use crate::{connection, calculate_hash};
 use crate::api::{Event, GetEventRequest, GetEventRespond, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond};
+use crate::model::event::EventModel;
+use crate::model::{DBModel, Model};
+use chrono::prelude::*;
 
 pub async fn set_new (request: Request<SetEventRequest>) -> Result<SetEventRespond, Status> {
     let data = request.get_ref();
-    let new_event = Event{
+
+    let event_model = EventModel::new(Event{
         comment: data.comment.clone(),
         partner: data.partner.clone(),
-        timeout: data.timeout.clone(),
-        payload: data.comment.clone(),
-    };
-
-    let  key = Uuid::new_v4();
-    //conection
-
-
+        timestamp: data.timestamp.clone(),
+        payload: data.payload.clone(),
+    });
+    println!("model new {:#?}", event_model);
+    let res = event_model.set().await;
+    println!("res new {:#?}", res);
     Ok(SetEventRespond {
         status: format!("Ok"),
-        id: String::from_str(&key.to_string()).unwrap()
+        id: String::from_str("id new").unwrap()
     })
 }
 

@@ -7,7 +7,7 @@ use sqlx::Error::Database;
 use crate::{connection, calculate_hash};
 use crate::api::{Event, GetEventRequest, GetEventRespond, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond};
 use crate::model::event::EventModel;
-use crate::model::{DBModel, Model};
+use crate::model::{Model};
 use chrono::prelude::*;
 
 pub async fn set_new (request: Request<SetEventRequest>) -> Result<SetEventRespond, Status> {

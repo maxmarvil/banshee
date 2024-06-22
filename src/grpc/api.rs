@@ -5,10 +5,10 @@
 pub struct Event {
     #[prost(string, tag = "1")]
     pub comment: ::prost::alloc::string::String,
-    #[prost(uint32, tag = "2")]
-    pub partner: u32,
-    #[prost(string, tag = "3")]
-    pub timestamp: ::prost::alloc::string::String,
+    #[prost(int32, tag = "2")]
+    pub partner: i32,
+    #[prost(int64, tag = "3")]
+    pub timestamp: i64,
     #[prost(string, tag = "5")]
     pub payload: ::prost::alloc::string::String,
 }
@@ -17,10 +17,10 @@ pub struct Event {
 pub struct SetEventRequest {
     #[prost(string, tag = "1")]
     pub comment: ::prost::alloc::string::String,
-    #[prost(uint32, tag = "2")]
-    pub partner: u32,
-    #[prost(string, tag = "3")]
-    pub timestamp: ::prost::alloc::string::String,
+    #[prost(int32, tag = "2")]
+    pub partner: i32,
+    #[prost(int64, tag = "3")]
+    pub timestamp: i64,
     #[prost(string, tag = "5")]
     pub payload: ::prost::alloc::string::String,
 }

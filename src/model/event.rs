@@ -11,7 +11,7 @@ use uuid::Uuid;
 use prost::Message;
 use crate::api::{Event};
 use crate::connection;
-use crate::model::{DBModel, Model};
+use crate::model::{ Model};
 use chrono::prelude::*;
 
 #[derive(Debug)]
@@ -19,16 +19,7 @@ pub struct EventModel {
     pub event: Event,
 }
 
-// impl Message for Event {
-//     fn update_struct(&mut self, data: Event) -> () {
-//         self.comment = data.comment.clone();
-//         self.partner = data.partner.clone();
-//         self.timestamp = data.timestamp.clone();
-//         self.payload = data.payload.clone();
-//         ()
-//     }
-// }
-impl  FromRedisValue for Event {
+impl FromRedisValue for Event {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         let json_str: String = from_redis_value(v)?;
         println!("dump {:#?}",json_str);
@@ -40,7 +31,7 @@ impl  FromRedisValue for Event {
         Ok(Event{
             comment:"mok".to_string(),
             partner:4,
-            timestamp:"".to_string(),
+            timestamp:1718285363,
             payload: "".to_string()
         })
     }
@@ -98,7 +89,13 @@ impl Serialize for Event {
 // }
 
 impl Model for EventModel {
-    fn delete<E>(&self)->Result<(), E> {
+    fn delete_by_id<T, E>(key: T) -> Result<(), E> {
+        //todo!()
+        Ok(())
+    }
+
+    fn delete<E>(&self) -> Result<(), E> {
+        //todo!()
         Ok(())
     }
 
@@ -107,9 +104,7 @@ impl Model for EventModel {
             event: item,
         }
     }
-}
 
-impl DBModel for EventModel {
     async fn set(&self) -> Result<(), String> {
         let  key = Uuid::new_v4();
         let mut pool_result = connection::mysql_connection::connect().await;
@@ -118,8 +113,8 @@ impl DBModel for EventModel {
             Err(e) => panic!("Ошибка соединения: {:#?}", e)
         };
 
-         // Create a normal DateTime from the NaiveDateTime
-        let datetime  = DateTime::from_timestamp(self.event.timestamp.parse::<i64>().unwrap(), 0).unwrap();
+        // Create a normal DateTime from the NaiveDateTime
+        let datetime  = DateTime::from_timestamp(self.event.timestamp, 0).unwrap();
         let q_builder = sqlx::query!(r#"INSERT INTO events (id, partner_id, timestamp, comment, payload) VALUES (?, ?, ?, ?, ?);"#,
             key.to_string(), self.event.partner, datetime.format("%Y-%m-%d %H:%M:%S").to_string(), self.event.comment.clone(), self.event.payload.clone());
         let res =  q_builder.execute(&conn_pool).await;
@@ -148,10 +143,5 @@ impl DBModel for EventModel {
     fn select<T:Message, E, S>(filter: HashMap<&str, &str, S>) -> Result<Option<Vec<T>>, E> {
         //todo!()
         Ok(None)
-    }
-
-    fn delete<T, E>(key: T) -> Result<(), E> {
-        //todo!()
-        Ok(())
     }
 }

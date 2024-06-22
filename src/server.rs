@@ -41,7 +41,7 @@ impl EventService for Event {
         let mok_event = Event{
             comment: String::from_str("Ok-mok").unwrap(),
             partner: 5,
-            timestamp: String::from_str("1718285363").unwrap(),
+            timestamp: 1718285363,
             payload: String::from_str("{}").unwrap()
         };
         let mut resp_vec = vec!();

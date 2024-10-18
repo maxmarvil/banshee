@@ -19,12 +19,13 @@ pub async fn set_new (request: Request<SetEventRequest>) -> Result<SetEventRespo
         timestamp: data.timestamp.clone(),
         payload: data.payload.clone(),
     });
-    println!("model new {:#?}", event_model);
+    //println!("model new {:#?}", event_model);
+
     let res = event_model.set().await;
-    println!("res new {:#?}", res);
+
     Ok(SetEventRespond {
         status: format!("Ok"),
-        id: String::from_str("id new").unwrap()
+        id: res.unwrap()
     })
 }
 

@@ -105,7 +105,7 @@ impl Model for EventModel {
         }
     }
 
-    async fn set(&self) -> Result<(), String> {
+    async fn set(&self) -> Result<String, String> {
         let  key = Uuid::new_v4();
         let mut pool_result = connection::mysql_connection::connect().await;
         let conn_pool = match pool_result {
@@ -115,20 +115,22 @@ impl Model for EventModel {
 
         // Create a normal DateTime from the NaiveDateTime
         let datetime  = DateTime::from_timestamp(self.event.timestamp, 0).unwrap();
-        let q_builder = sqlx::query!(r#"INSERT INTO events (id, partner_id, timestamp, comment, payload) VALUES (?, ?, ?, ?, ?);"#,
-            key.to_string(), self.event.partner, datetime.format("%Y-%m-%d %H:%M:%S").to_string(), self.event.comment.clone(), self.event.payload.clone());
+        let q_builder = sqlx::query!(
+            r#"INSERT INTO events (id, partner_id, timestamp, comment, payload) VALUES (?, ?, ?, ?, ?);"#,
+            key.to_string(),
+            self.event.partner,
+            datetime.format("%Y-%m-%d %H:%M:%S").to_string(),
+            self.event.comment.clone(),
+            self.event.payload.clone()
+        );
         let res =  q_builder.execute(&conn_pool).await;
 
-        println!("res {:#?}", res);
         let row = match res {
-            Ok(new) => {
-                println!("row {:#?}", new);
-                new
-            } ,
+            Ok(new) => new ,
             Err(er) => panic!("Ошибка запроса: {:#?}", er)
         };
 
-        Ok(())
+        Ok(key.to_string())
     }
     async fn update<E>(&self) -> Result<(), E> {
         //todo!()

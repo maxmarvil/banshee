@@ -5,9 +5,12 @@ use model::event::EventModel;
 use api::{Event, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond,GetEventRequest, GetEventRespond};
 use api::event_service_server::{EventService, EventServiceServer};
 use std::hash::{DefaultHasher, Hash, Hasher};
+use std::sync::{Arc};
 use log::info;
 use serde::{Serialize,ser::{SerializeStruct}};
 use serde_json::{Serializer};
+use sqlx::{MySql, Pool};
+use tokio::sync::Mutex;
 
 pub mod api;
 pub mod model;
@@ -15,7 +18,7 @@ pub mod connection;
 pub mod controller;
 mod validator;
 
-
+//const BD_CONNECT: Arc<Mutex<Option<&Pool<MySql>>>> = Arc::new(Mutex::new(None));
 #[tonic::async_trait]
 impl EventService for Event {
     async fn set(&self, request: Request<SetEventRequest>) -> Result<Response<SetEventRespond>, Status> {
@@ -71,6 +74,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = ServerCli::parse();
     let addr = format!("{}:{}", cli.server, cli.port).parse()?;
     let event = Event::default();
+
+    let pool_result = connection::mysql_connection::connect().await;
+    //let mut opt_pool = connect_db;
+
+    let pool  = match pool_result {
+        Ok(pool) => Some(pool),
+        Err(_) => None
+    };
+
 
     println!("Server listening on {}", addr);
     info!("try migration");

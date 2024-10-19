@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use chrono::{DateTime, NaiveDateTime, Utc};
-use log::error;
+use log::{error, info};
 use redis::{Connection, ErrorKind, from_redis_value, FromRedisValue, NumericBehavior, RedisResult, RedisWrite, ToRedisArgs, Value};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::__private::de::IdentifierDeserializer;
 use serde::ser::SerializeStruct;
-use sqlx::{Error, Execute};
+use sqlx::{ColumnIndex, Error, Execute, FromRow, Row};
 use sqlx::error::DatabaseError;
 use uuid::Uuid;
 use prost::Message;
@@ -19,6 +19,14 @@ pub struct EventModel {
     pub event: Event,
 }
 
+#[derive(FromRow, Deserialize, Debug)]
+pub struct DBEvent {
+    pub id: String,
+    pub comment: String,
+    pub partner_id: i32,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
+    pub payload: String,
+}
 impl FromRedisValue for Event {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         let json_str: String = from_redis_value(v)?;
@@ -107,7 +115,7 @@ impl Model for EventModel {
 
     async fn set(&self) -> Result<String, String> {
         let  key = Uuid::new_v4();
-        let mut pool_result = connection::mysql_connection::connect().await;
+        let pool_result = connection::mysql_connection::connect().await;
         let conn_pool = match pool_result {
             Ok(pool) => pool,
             Err(e) => panic!("Ошибка соединения: {:#?}", e)
@@ -137,9 +145,34 @@ impl Model for EventModel {
         Ok(())
     }
 
-    fn get<T:Message, E>(key: &str) -> Result<Option<T>, E> {
-        //todo!()
-        Ok(None)
+    async fn get(key: &str) -> Result<Option<EventModel>, String> {
+        let mut pool_result = connection::mysql_connection::connect().await;
+        let conn_pool = match pool_result {
+            Ok(pool) => pool,
+            Err(e) => panic!("Ошибка соединения: {:#?}", e)
+        };
+
+        let str_query = format!("select * from events where id='{}';", key.to_string());
+        let res =  sqlx::query_as::<_, DBEvent>(str_query.as_str()).fetch_one(&conn_pool).await;
+
+        let row = match res {
+            Ok(new) => new ,
+            Err(er) => {
+                info!("Ошибка запроса: {:#?}", er);
+                return Ok(None);
+            }
+        };
+
+        let event_model = EventModel {
+            event: Event{
+                comment: row.comment,
+                partner: row.partner_id,
+                timestamp: row.timestamp.timestamp_micros(),
+                payload: row.payload,
+            },
+        };
+
+        Ok(Some(event_model))
     }
 
     fn select<T:Message, E, S>(filter: HashMap<&str, &str, S>) -> Result<Option<Vec<T>>, E> {

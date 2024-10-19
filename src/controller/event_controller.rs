@@ -1,14 +1,9 @@
-use tonic::{IntoRequest, Request, Status};
-use std::str::FromStr;
-use redis::{ RedisError, RedisResult};
-use uuid::Uuid;
+use tonic::{Request, Status};
 
 use sqlx::Error::Database;
-use crate::{connection, calculate_hash};
-use crate::api::{Event, GetEventRequest, GetEventRespond, GetEventsRequest, GetEventsRespond, SetEventRequest, SetEventRespond};
+use crate::api::{Event, GetEventRequest, GetEventRespond, SetEventRequest, SetEventRespond};
 use crate::model::event::EventModel;
 use crate::model::{Model};
-use chrono::prelude::*;
 
 pub async fn set_new (request: Request<SetEventRequest>) -> Result<SetEventRespond, Status> {
     let data = request.get_ref();
@@ -30,40 +25,15 @@ pub async fn set_new (request: Request<SetEventRequest>) -> Result<SetEventRespo
 }
 
 pub async fn get_one(request: Request<GetEventRequest>) -> Result<GetEventRespond, Status> {
-    Ok(
-        GetEventRespond {
-            status: format!("Ok-mok"),
-            event: None//Some(event_val)
-        })
+    let data = request.get_ref();
+    let res = EventModel::get(&data.key).await.unwrap();
+    let (status, data) = match res {
+        Some(data) =>  ("Ok".to_string(), Some(data.event)) ,
+        None => ("Not Found".to_string(), None)
+    };
+
+    Ok(GetEventRespond {
+        status: status,
+        event: data
+    })
 }
-// pub async fn get_one(request: Request<GetEventRequest>) -> Result<GetEventRespond, RedisError> {
-//     let data = request.get_ref();
-//     let mut conection = connection::redis_connection::connect().await.unwrap();
-//     let item:RedisResult<Event> = redis::pipe()
-//         .atomic()
-//         .get(data.key.clone())
-//         .query_async(&mut conection)
-//         .await;
-//
-//     let item = match item {
-//         RedisResult::Err(err) => return Err(err),
-//         RedisResult::Ok(val) => val
-//     };
-//     //println!("dump {:#?}", item);
-//
-//
-//     // let (redis_res) = match item {
-//     //     Ok(val)=>val,
-//     //     Err(er) => {
-//     //         return Err(Status::new(Code::NotFound, "Not found record"))
-//     //     }
-//     // };
-//     println!("redis value {:#?}", item);
-//     //let event_val = Event::try_from(redis_res).unwrap();
-//     Ok(
-//         GetEventRespond {
-//             status: format!("Ok"),
-//             event: None//Some(event_val)
-//         }
-//     )
-// }

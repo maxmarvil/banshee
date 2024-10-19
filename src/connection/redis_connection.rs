@@ -1,13 +1,11 @@
 extern crate redis;
 
-use std::env;
 use redis::Client;
 use redis::aio::MultiplexedConnection;
 use std::env::var as envar;
-use std::path::PathBuf;
 
 pub async fn connect() -> redis::RedisResult<MultiplexedConnection> {
-    let mut client:Client;
+    let client:Client;
 
     if envar("REDIS_PASSWORD").unwrap() == "none" {
         client = redis::Client::open(format!("redis://{}:{}/{}",
@@ -24,8 +22,6 @@ pub async fn connect() -> redis::RedisResult<MultiplexedConnection> {
     }
 
     let multi_con = client.get_multiplexed_tokio_connection().await.unwrap();
-
-    //let con = client.get_connection().unwrap();
 
     Ok(multi_con)
 }

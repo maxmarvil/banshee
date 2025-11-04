@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::ffi::CString;
+use std::string::ToString;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use log::{error, info};
 use redis::{Connection, ErrorKind, from_redis_value, FromRedisValue, NumericBehavior, RedisResult, RedisWrite, ToRedisArgs, Value};
@@ -13,10 +15,22 @@ use crate::api::{Event};
 use crate::connection;
 use crate::model::{ Model};
 use chrono::prelude::*;
+use http::{Method, Request, Response};
+use reqwest::Url;
+
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct EventPayload {
+    url: String,
+    method: String
+}
+
 
 #[derive(Debug)]
 pub struct EventModel {
     pub event: Event,
+    id: String,
+    status: String
 }
 
 #[derive(FromRow, Deserialize, Debug)]
@@ -24,8 +38,9 @@ pub struct DBEvent {
     pub id: String,
     pub comment: String,
     pub partner_id: i32,
-    pub timestamp: chrono::DateTime<chrono::Utc>,
+    pub timestamp: DateTime<Utc>,
     pub payload: String,
+    pub status: String,
 }
 impl FromRedisValue for Event {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
@@ -110,6 +125,8 @@ impl Model for EventModel {
     fn new(item: Event) -> EventModel{
         EventModel {
             event: item,
+            id:"".to_string(),
+            status:"".to_string()
         }
     }
 
@@ -170,6 +187,8 @@ impl Model for EventModel {
                 timestamp: row.timestamp.timestamp_micros(),
                 payload: row.payload,
             },
+            id: row.id,
+            status: row.status
         };
 
         Ok(Some(event_model))
@@ -178,5 +197,58 @@ impl Model for EventModel {
     fn select<T:Message, E, S>(filter: HashMap<&str, &str, S>) -> Result<Option<Vec<T>>, E> {
         //todo!()
         Ok(None)
+    }
+
+}
+
+impl EventModel{
+    pub async fn check_events() {
+        println!("Hi!");
+        let mut pool_result = connection::mysql_connection::connect().await;
+        let conn_pool = match pool_result {
+            Ok(pool) => pool,
+            Err(e) => panic!("Ошибка соединения: {:#?}", e)
+        };
+        let dt = chrono::Local::now();
+
+        let str_query = format!("select * from events where timestamp < '{}' and status = 'pending';", dt);
+        let all_row =  sqlx::query_as::<_, DBEvent>(str_query.as_str()).fetch_all(&conn_pool).await.unwrap();
+
+        for row in all_row {
+            let payload:EventPayload = serde_json::from_str(&row.payload).unwrap();
+            println!("payload {:#?}",payload);
+            if payload.url.contains("http") {
+                let resp = match payload.method.as_str() {
+                    "get" => {
+                        match reqwest::get(payload.url).await {
+                            Ok(resp) => true,
+                            Err(err) => {info!("Error: {}", err); false }
+                        }
+                    },
+                    "post" => {
+                        let client = reqwest::Client::new();
+
+                        match client.post(payload.url).send().await {
+                            Ok(resp) => true,
+                            Err(err) => {info!("Error: {}", err); false }
+                        }
+                    },
+                    _ => false
+                };
+                // ответ предполагается в виде json
+                println!("{:#?}", resp);
+
+                if resp {
+                    let str_query = format!("UPDATE events SET status = 'success' WHERE id LIKE '{}' ;", row.id);
+                    let res = sqlx::query(str_query.as_str()).fetch_one(&conn_pool).await;
+                    let updated = match res {
+                        Ok(row) => true,
+                        Err(_) => false
+                    };
+                }
+            }
+
+
+        }
     }
 }

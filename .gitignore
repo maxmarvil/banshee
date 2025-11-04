@@ -1,2 +1,4 @@
 /target
 /Docker
+/.idea
+.env

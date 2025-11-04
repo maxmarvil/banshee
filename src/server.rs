@@ -11,6 +11,8 @@ use serde::{Serialize,ser::{SerializeStruct}};
 use serde_json::{Serializer};
 use sqlx::{MySql, Pool};
 use tokio::sync::Mutex;
+use tokio::time::Instant;
+use crate::model::event::DBEvent;
 
 pub mod api;
 pub mod model;
@@ -31,11 +33,6 @@ impl EventService for Event {
         println!("Got a request: {:#?}", request);
 
         let  result = controller::event_controller::get_one(request);
-
-        // let reply = GetEventRespond {
-        //     status:  String::from_str("Ok").unwrap(),
-        //     event: Some(mok_event)
-        // };
 
         Ok(Response::new(result.await.unwrap()))
     }
@@ -87,6 +84,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Server listening on {}", addr);
     info!("try migration");
 
+    println!("Start timers");
+    let mut old = Instant::now();
+    tokio::spawn(async move {
+        loop {
+            /// do something else
+            let now = Instant::now();
+            match now.checked_duration_since(old)
+            {
+                Some(dur) => {
+                    if dur.as_secs() == tokio::time::Duration::from_secs(1).as_secs()
+                    {
+                        old = Instant::now();
+                        EventModel::check_events().await;
+                    }
+                },
+                None => {}
+            };
+        }
+    });
+
+    println!("run build");
     Server::builder()
         .add_service(EventServiceServer::new(event))
         .serve(addr)
